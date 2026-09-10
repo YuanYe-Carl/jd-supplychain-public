@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$PasswordEnv = 'WAREHOUSE_RATIO_PAGES_PASSWORD',
     [string]$InventoryDirectory = '',

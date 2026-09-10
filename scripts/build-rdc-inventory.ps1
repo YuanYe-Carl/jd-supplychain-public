@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$PasswordEnv = '',
     [string]$Source = '',
     [string]$Output = ''

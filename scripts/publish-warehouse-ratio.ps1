@@ -1,8 +1,11 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$CredentialPath = (Join-Path $env:LOCALAPPDATA 'JD-SupplyChain\warehouse-ratio-pages-password.xml'),
     [string]$StatePath = (Join-Path $env:LOCALAPPDATA 'JD-SupplyChain\warehouse-ratio-pages-state.json'),
     [string]$LockPath = (Join-Path $env:LOCALAPPDATA 'JD-SupplyChain\warehouse-ratio-pages-publish.lock'),
+    [string]$InventoryDirectory = '',
+    [string]$Direct = '',
+    [string]$MappingDirectory = '',
     [switch]$Force,
     [switch]$NoPush
 )
@@ -14,9 +17,23 @@ $Builder = Join-Path $PSScriptRoot 'build-warehouse-ratio.ps1'
 $Model = Join-Path $RepoRoot 'data\warehouse-ratio-model.enc.json'
 $Status = Join-Path $RepoRoot 'data\warehouse-ratio-status.json'
 $Outputs = @('data/warehouse-ratio-model.enc.json', 'data/warehouse-ratio-status.json')
-$InventoryDirectory = 'C:\Users\yao.q.1\Procter and Gamble\JD PS 铁军 - Documents\17 SND\18. 代发治理\拆单或代发判断数据基础\JD库存大表'
-$Direct = 'C:\Users\yao.q.1\Procter and Gamble\JD PS 铁军 - Documents\17 SND\18. 代发治理\拆单或代发判断数据基础\宝洁直送明细.xlsx'
-$MappingDirectory = 'C:\Users\yao.q.1\repos\jd-supplychain-apps\apps\jd_11rdc_dc_mapping\output'
+if (-not $InventoryDirectory -or -not $Direct) {
+    $sourceDirectory = if ($env:JD_FULFILLMENT_SOURCE_DIR) {
+        $env:JD_FULFILLMENT_SOURCE_DIR
+    } else {
+        Join-Path $env:USERPROFILE 'Procter and Gamble\JD PS 铁军 - 文档\17 SND\18. 代发治理\拆单或代发判断数据基础'
+    }
+    if (-not $InventoryDirectory) { $InventoryDirectory = Join-Path $sourceDirectory 'JD库存大表' }
+    if (-not $Direct) { $Direct = Join-Path $sourceDirectory '宝洁直送明细.xlsx' }
+}
+if (-not $MappingDirectory) {
+    $appsRoot = if ($env:JD_SUPPLYCHAIN_APPS_ROOT) {
+        $env:JD_SUPPLYCHAIN_APPS_ROOT
+    } else {
+        Join-Path $env:USERPROFILE 'repos\jd-supplychain-apps'
+    }
+    $MappingDirectory = Join-Path $appsRoot 'apps\jd_11rdc_dc_mapping\output'
+}
 $GitBase = @('-c', "safe.directory=$RepoRoot", '-C', $RepoRoot)
 
 function Invoke-Git {

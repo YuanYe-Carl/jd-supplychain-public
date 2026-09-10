@@ -22,8 +22,17 @@ from cryptography.hazmat.primitives import hashes
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = Path(
-    r"C:\Users\yao.q.1\Procter and Gamble\JD CSC Slay - Documents"
-    r"\7. AI Order\Low Inventory Alert\RDC库存报告.xlsx"
+    os.getenv(
+        "JD_RDC_SOURCE",
+        str(
+            Path.home()
+            / "Procter and Gamble"
+            / "JD CSC Slay - 文档"
+            / "7. AI Order"
+            / "Low Inventory Alert"
+            / "RDC库存报告.xlsx"
+        ),
+    )
 )
 DEFAULT_OUTPUT = REPO_ROOT / "data" / "rdc-inventory.enc.json"
 DEFAULT_CATALOG_OUTPUT = REPO_ROOT / "data" / "rdc-product-catalog.enc.json"

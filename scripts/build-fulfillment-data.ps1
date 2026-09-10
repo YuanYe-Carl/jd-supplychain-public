@@ -1,13 +1,22 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$CredentialPath = (Join-Path $env:LOCALAPPDATA 'JD-SupplyChain\fulfillment-pages-password.xml'),
-    [ValidateRange(1, 10)][int]$SnapshotCount = 3
+    [ValidateRange(1, 10)][int]$SnapshotCount = 3,
+    [string]$AppAssets = ''
 )
 
 $ErrorActionPreference = 'Stop'
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $Python = Join-Path $RepoRoot '.venv\Scripts\python.exe'
 $Builder = Join-Path $PSScriptRoot 'build-fulfillment-data.py'
+if (-not $AppAssets) {
+    $appsRoot = if ($env:JD_SUPPLYCHAIN_APPS_ROOT) {
+        $env:JD_SUPPLYCHAIN_APPS_ROOT
+    } else {
+        Join-Path $env:USERPROFILE 'repos\jd-supplychain-apps'
+    }
+    $AppAssets = Join-Path $appsRoot 'apps\jd_fulfillment_decision_tool\assets'
+}
 
 if (-not (Test-Path -LiteralPath $Python)) {
     throw '找不到公开站构建环境，请先运行 build-rdc-inventory.ps1'
@@ -24,6 +33,7 @@ $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword
 try {
     $env:FULFILLMENT_PAGES_PASSWORD = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer)
     & $Python -X utf8 $Builder `
+        --app-assets $AppAssets `
         --password-env FULFILLMENT_PAGES_PASSWORD `
         --snapshot-count $SnapshotCount `
         --self-test

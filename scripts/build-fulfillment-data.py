@@ -23,9 +23,11 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_APP_ASSETS = Path(
-    r"C:\Users\yao.q.1\repos\jd-supplychain-apps"
-    r"\apps\jd_fulfillment_decision_tool\assets"
-)
+    os.getenv(
+        "JD_SUPPLYCHAIN_APPS_ROOT",
+        str(Path.home() / "repos" / "jd-supplychain-apps"),
+    )
+) / "apps" / "jd_fulfillment_decision_tool" / "assets"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "data" / "fulfillment-snapshots"
 DEFAULT_STATUS_OUTPUT = REPO_ROOT / "data" / "fulfillment-status.json"
 ITERATIONS = 600_000

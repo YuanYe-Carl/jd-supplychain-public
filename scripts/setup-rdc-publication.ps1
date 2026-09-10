@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$CredentialPath = (Join-Path $env:LOCALAPPDATA 'JD-SupplyChain\rdc-pages-password.xml'),
     [string]$TaskName = 'JD-RDC-Pages-Publish'
@@ -38,7 +38,7 @@ New-Item -ItemType Directory -Path $CredentialDirectory -Force | Out-Null
 $password | Export-Clixml -LiteralPath $CredentialPath -Force
 
 $Runner = Join-Path $PSScriptRoot 'run-rdc-publication.ps1'
-$PowerShell = (Get-Command pwsh.exe -ErrorAction Stop).Source
+$PowerShell = (Get-Command powershell.exe -ErrorAction Stop).Source
 $Action = New-ScheduledTaskAction `
     -Execute $PowerShell `
     -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$Runner`""

@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $LogDirectory = Join-Path $env:LOCALAPPDATA 'JD-SupplyChain\logs'
 New-Item -ItemType Directory -Path $LogDirectory -Force | Out-Null

@@ -24,13 +24,27 @@ from pyecharts.datasets import COORDINATES
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE_DIR = Path(
-    r"C:\Users\yao.q.1\Procter and Gamble\JD PS 铁军 - Documents"
-    r"\17 SND\18. 代发治理\拆单或代发判断数据基础"
+    os.getenv(
+        "JD_FULFILLMENT_SOURCE_DIR",
+        str(
+            Path.home()
+            / "Procter and Gamble"
+            / "JD PS 铁军 - 文档"
+            / "17 SND"
+            / "18. 代发治理"
+            / "拆单或代发判断数据基础"
+        ),
+    )
 )
 DEFAULT_INVENTORY_DIR = DEFAULT_SOURCE_DIR / "JD库存大表"
 DEFAULT_DIRECT = DEFAULT_SOURCE_DIR / "宝洁直送明细.xlsx"
 DEFAULT_MAPPING_DIR = (
-    Path(r"C:\Users\yao.q.1\repos\jd-supplychain-apps")
+    Path(
+        os.getenv(
+            "JD_SUPPLYCHAIN_APPS_ROOT",
+            str(Path.home() / "repos" / "jd-supplychain-apps"),
+        )
+    )
     / "apps"
     / "jd_11rdc_dc_mapping"
     / "output"

@@ -9,7 +9,12 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_ASSETS = Path(r"C:\Users\yao.q.1\repos\jd-supplychain-apps\apps\jd_free_goods_bbcc_cost_simulation\assets")
+DEFAULT_APP_ASSETS = Path(
+    os.getenv(
+        "JD_SUPPLYCHAIN_APPS_ROOT",
+        str(Path.home() / "repos" / "jd-supplychain-apps"),
+    )
+) / "apps" / "jd_free_goods_bbcc_cost_simulation" / "assets"
 ITERATIONS = 600_000
 DIRECT_LEADS = {"北京": 2, "上海": 2, "广州": 2, "武汉": 2, "西安": 2, "成都": 2, "沈阳": 2, "德州": 3, "杭州": 2, "南京": 2, "郑州": 4}
 class BuildError(RuntimeError): pass
@@ -26,14 +31,14 @@ def decrypt(payload: Mapping[str, Any], password: str) -> dict[str, Any]:
 def atomic(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True); temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False), encoding="utf-8"); temporary.replace(path)
-def compact(bundle: Any) -> dict[str, Any]:
+def compact(bundle: Any, app_assets: Path) -> dict[str, Any]:
     gifts = bundle.gifts.sort_values("sku").reset_index(drop=True); sku_index = {sku: i for i, sku in enumerate(gifts.sku)}
     cities = sorted(set(bundle.demand_shares.c_city)); city_index = {city: i for i, city in enumerate(cities)}
     months = sorted(set(bundle.monthly_shipments.month)); month_index = {month: i for i, month in enumerate(months)}
     warehouses = list(bundle.warehouses); route_index = {item["route_key"]: index for index, item in enumerate(warehouses)}
     if len(warehouses) != 13: raise BuildError(f"权威B仓应为13个，实际为{len(warehouses)}")
     if len(route_index) != len(warehouses): raise BuildError("B仓始发城市重复，无法发布")
-    sys.path.insert(0, str(APP_ASSETS))
+    sys.path.insert(0, str(app_assets))
     from simulation import _calendar_counts
     calendar = {name: [_calendar_counts(name)[month] for month in months] for name in ("daily", "weekly_1", "weekly_2", "weekly_3", "weekly_4", "weekly_5")}
     calendar["weekly"], calendar["twice_weekly"] = calendar["weekly_1"], calendar["weekly_2"]
@@ -52,12 +57,12 @@ def compact(bundle: Any) -> dict[str, Any]:
     }
     return payload
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--password-env", default="BBCC_PAGES_PASSWORD"); parser.add_argument("--self-test", action="store_true"); args = parser.parse_args()
+    parser = argparse.ArgumentParser(); parser.add_argument("--app-assets", type=Path, default=DEFAULT_APP_ASSETS); parser.add_argument("--password-env", default="BBCC_PAGES_PASSWORD"); parser.add_argument("--self-test", action="store_true"); args = parser.parse_args()
     password = os.getenv(args.password_env, "")
     if len(password) < 8: raise BuildError(f"环境变量{args.password_env}未设置或密码少于8位")
-    if not APP_ASSETS.exists(): raise BuildError(f"找不到私有BBCC数据层：{APP_ASSETS}")
-    sys.path.insert(0, str(APP_ASSETS)); from data import build_bundle, DEFAULT_WAREHOUSES
-    bundle = build_bundle(); data = compact(bundle); data["default_warehouses"] = [item["name"] for item in DEFAULT_WAREHOUSES]; generated = datetime.now().astimezone().isoformat(timespec="seconds")
+    if not args.app_assets.exists(): raise BuildError(f"找不到私有BBCC数据层：{args.app_assets}")
+    sys.path.insert(0, str(args.app_assets)); from data import build_bundle, DEFAULT_WAREHOUSES
+    bundle = build_bundle(); data = compact(bundle, args.app_assets); data["default_warehouses"] = [item["name"] for item in DEFAULT_WAREHOUSES]; generated = datetime.now().astimezone().isoformat(timespec="seconds")
     envelope = encrypt({"metadata": {"generated_at": generated, "format": data["format"]}, "data": data}, password)
     model_path = ROOT / "data" / "bbcc-model.enc.json"; atomic(model_path, envelope)
     status = {"version": 1, "generated_at": generated, "date_range": {"start": data["months"][0], "end": data["months"][-1]}, "counts": {"gift_skus": len(data["gifts"]), "cities": len(data["cities"]), "warehouses": len(data["warehouses"]), "rate_routes": len(data["rates"]), "months": len(data["months"])}}

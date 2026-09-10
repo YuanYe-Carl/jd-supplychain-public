@@ -1,7 +1,8 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [ValidateRange(1, 10)][int]$SnapshotCount = 3,
-    [string]$SourceDirectory = 'C:\Users\yao.q.1\Procter and Gamble\JD PS 铁军 - Documents\17 SND\18. 代发治理\拆单或代发判断数据基础',
+    [string]$SourceDirectory = '',
+    [string]$AppAssets = '',
     [string]$StatePath = (Join-Path $env:LOCALAPPDATA 'JD-SupplyChain\fulfillment-pages-state.json'),
     [switch]$Force,
     [switch]$NoPush
@@ -10,6 +11,21 @@ param(
 $ErrorActionPreference = 'Stop'
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $Builder = Join-Path $PSScriptRoot 'build-fulfillment-data.ps1'
+if (-not $SourceDirectory) {
+    $SourceDirectory = if ($env:JD_FULFILLMENT_SOURCE_DIR) {
+        $env:JD_FULFILLMENT_SOURCE_DIR
+    } else {
+        Join-Path $env:USERPROFILE 'Procter and Gamble\JD PS 铁军 - 文档\17 SND\18. 代发治理\拆单或代发判断数据基础'
+    }
+}
+if (-not $AppAssets) {
+    $appsRoot = if ($env:JD_SUPPLYCHAIN_APPS_ROOT) {
+        $env:JD_SUPPLYCHAIN_APPS_ROOT
+    } else {
+        Join-Path $env:USERPROFILE 'repos\jd-supplychain-apps'
+    }
+    $AppAssets = Join-Path $appsRoot 'apps\jd_fulfillment_decision_tool\assets'
+}
 $RelativeOutputs = @(
     'data/fulfillment-status.json'
     'data/fulfillment-snapshots'
@@ -46,6 +62,51 @@ function Invoke-Git {
     & git @GitBase @Arguments
     if ($LASTEXITCODE -ne 0) {
         throw "git $($Arguments -join ' ')失败，退出码$LASTEXITCODE"
+    }
+}
+
+function Invoke-EngineTest {
+    param([Parameter(Mandatory)][string]$Path)
+
+    $node = Get-Command node.exe -ErrorAction SilentlyContinue
+    if ($node) {
+        & $node.Source $Path
+        if ($LASTEXITCODE -ne 0) {
+            throw "浏览器履约引擎测试失败，退出码$LASTEXITCODE"
+        }
+        return
+    }
+
+    $code = Join-Path $env:ProgramFiles 'Microsoft VS Code\Code.exe'
+    if (-not (Test-Path -LiteralPath $code)) {
+        throw '未找到 Node.js 或 VS Code 内置 Node 运行时'
+    }
+
+    $stdoutPath = [IO.Path]::GetTempFileName()
+    $stderrPath = [IO.Path]::GetTempFileName()
+    $previousRunAsNode = $env:ELECTRON_RUN_AS_NODE
+    try {
+        $env:ELECTRON_RUN_AS_NODE = '1'
+        $process = Start-Process `
+            -FilePath $code `
+            -ArgumentList "`"$Path`"" `
+            -WorkingDirectory $RepoRoot `
+            -Wait `
+            -PassThru `
+            -RedirectStandardOutput $stdoutPath `
+            -RedirectStandardError $stderrPath
+        Get-Content -LiteralPath $stdoutPath -ErrorAction SilentlyContinue
+        Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue
+        if ($process.ExitCode -ne 0) {
+            throw "浏览器履约引擎测试失败，退出码$($process.ExitCode)"
+        }
+    } finally {
+        if ($null -eq $previousRunAsNode) {
+            Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
+        } else {
+            $env:ELECTRON_RUN_AS_NODE = $previousRunAsNode
+        }
+        Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
     }
 }
 
@@ -101,10 +162,9 @@ if (-not $NoPush) {
     }
 }
 
-& $Builder -SnapshotCount $SnapshotCount
+& $Builder -SnapshotCount $SnapshotCount -AppAssets $AppAssets
 if ($LASTEXITCODE -ne 0) { throw "履约密文构建失败，退出码$LASTEXITCODE" }
-& node (Join-Path $PSScriptRoot 'test-fulfillment-engine.js')
-if ($LASTEXITCODE -ne 0) { throw "浏览器履约引擎测试失败，退出码$LASTEXITCODE" }
+Invoke-EngineTest (Join-Path $PSScriptRoot 'test-fulfillment-engine.js')
 
 $addArguments = @('add', '--') + $RelativeOutputs
 Invoke-Git $addArguments

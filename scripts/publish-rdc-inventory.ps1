@@ -1,6 +1,6 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
-    [string]$Source = 'C:\Users\yao.q.1\Procter and Gamble\JD CSC Slay - Documents\7. AI Order\Low Inventory Alert\RDC库存报告.xlsx',
+    [string]$Source = '',
     [string]$CredentialPath = (Join-Path $env:LOCALAPPDATA 'JD-SupplyChain\rdc-pages-password.xml'),
     [string]$StatePath = (Join-Path $env:LOCALAPPDATA 'JD-SupplyChain\rdc-pages-state.json'),
     [switch]$Force,
@@ -10,6 +10,13 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+if (-not $Source) {
+    $Source = if ($env:JD_RDC_SOURCE) {
+        $env:JD_RDC_SOURCE
+    } else {
+        Join-Path $env:USERPROFILE 'Procter and Gamble\JD CSC Slay - 文档\7. AI Order\Low Inventory Alert\RDC库存报告.xlsx'
+    }
+}
 $RelativeOutputs = @(
     'data/rdc-inventory.enc.json'
     'data/rdc-inventory-status.json'

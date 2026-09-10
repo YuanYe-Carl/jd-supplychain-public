@@ -96,7 +96,7 @@ GitHub Pages 是纯静态托管，不能运行服务端密码认证。本站采�
 在当前 Windows 用户下运行一次：
 
 ```powershell
-cd C:\Users\yao.q.1\repos\jd-supplychain-public
+cd <你的仓库路径>\jd-supplychain-public
 .\scripts\setup-rdc-publication.ps1
 ```
 
@@ -115,7 +115,7 @@ cd C:\Users\yao.q.1\repos\jd-supplychain-public
 交互式生成密文：
 
 ```powershell
-cd C:\Users\yao.q.1\repos\jd-supplychain-public
+cd <你的仓库路径>\jd-supplychain-public
 .\scripts\build-rdc-inventory.ps1
 ```
 
@@ -142,7 +142,7 @@ cd C:\Users\yao.q.1\repos\jd-supplychain-public
 履约页使用独立DPAPI密码文件`%LOCALAPPDATA%\JD-SupplyChain\fulfillment-pages-password.xml`。当前访问密码为8位小写字母；静态密文可被离线尝试破解，建议后续提高到至少12位。构建与推送：
 
 ```powershell
-cd C:\Users\yao.q.1\repos\jd-supplychain-public
+cd <你的仓库路径>\jd-supplychain-public
 .\scripts\build-fulfillment-data.ps1
 .\scripts\publish-fulfillment.ps1
 ```
@@ -166,7 +166,7 @@ node .\scripts\test-fulfillment-engine.js
 BBCC页面是纯静态浏览器应用。真实SKU、FY2526历史货量、城市需求分布、13个B仓和商业报价均经AES-256-GCM加密；用户输入和仿真结果只存在于当前浏览器。页面使用独立的DPAPI密码文件`%LOCALAPPDATA%\JD-SupplyChain\bbcc-pages-password.xml`：
 
 ```powershell
-cd C:\Users\yao.q.1\repos\jd-supplychain-public
+cd <你的仓库路径>\jd-supplychain-public
 .\scripts\build-bbcc-data.ps1
 node .\scripts\test-bbcc-engine.js
 ```

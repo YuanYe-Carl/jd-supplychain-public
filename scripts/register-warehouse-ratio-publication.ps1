@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $TaskName = 'JD-Warehouse-Ratio-Pages-Publish'
 $Runner = Join-Path $PSScriptRoot 'run-warehouse-ratio-publication.ps1'

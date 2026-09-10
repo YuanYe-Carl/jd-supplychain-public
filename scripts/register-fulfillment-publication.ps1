@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $TaskName = 'JD-Fulfillment-Pages-Publish'
 $Runner = Join-Path $PSScriptRoot 'run-fulfillment-publication.ps1'
