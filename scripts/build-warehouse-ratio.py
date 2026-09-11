@@ -723,8 +723,8 @@ def atomic_json(path: Path, value: dict[str, Any]) -> None:
 def main() -> int:
     args = parse_args()
     password = os.getenv(args.password_env, "")
-    if len(password) < 12:
-        raise BuildError(f"环境变量{args.password_env}未设置或密码少于12位")
+    if len(password) < 8:
+        raise BuildError(f"环境变量{args.password_env}未设置或密码少于8位")
 
     inventory_path, detected_inventory, fallback, inventory_warning = (
         stage_inventory(args.inventory_dir, args.cache_dir)

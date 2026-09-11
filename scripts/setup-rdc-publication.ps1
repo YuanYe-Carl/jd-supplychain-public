@@ -17,13 +17,13 @@ function ConvertTo-PlainText {
     }
 }
 
-$password = Read-Host '设置 RDC 查询访问密码（至少 12 位）' -AsSecureString
+$password = Read-Host '设置 RDC 查询访问密码（至少 8 位）' -AsSecureString
 $confirmation = Read-Host '再次输入密码' -AsSecureString
 $plainPassword = ConvertTo-PlainText $password
 $plainConfirmation = ConvertTo-PlainText $confirmation
 try {
-    if ($plainPassword.Length -lt 12) {
-        throw '密码至少需要 12 位'
+    if ($plainPassword.Length -lt 8) {
+        throw '密码至少需要 8 位'
     }
     if ($plainPassword -cne $plainConfirmation) {
         throw '两次输入的密码不一致'

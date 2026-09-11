@@ -111,9 +111,9 @@ def prompt_password(environment_name: str = "") -> str:
             raise BuildError(f"环境变量 {environment_name} 未设置")
         return password
 
-    password = getpass.getpass("设置库存查询页密码（至少 12 位）：")
-    if len(password) < 12:
-        raise BuildError("密码至少需要 12 位")
+    password = getpass.getpass("设置库存查询页密码（至少 8 位）：")
+    if len(password) < 8:
+        raise BuildError("密码至少需要 8 位")
     confirmation = getpass.getpass("再次输入密码：")
     if password != confirmation:
         raise BuildError("两次输入的密码不一致")

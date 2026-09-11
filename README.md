@@ -131,7 +131,7 @@ cd <你的仓库路径>\jd-supplychain-public
 .\scripts\publish-rdc-inventory.ps1 -Force -NoPush
 ```
 
-必须使用至少 12 位且不可猜测的密码。静态密文可被下载并离线尝试破解，因此密码强度是安全边界；不要把明文 Excel、密码或解密后的 JSON 提交到本仓库。
+密码至少需要 8 位，建议使用 12 位以上且不可猜测的密码。静态密文可被下载并离线尝试破解，因此密码强度是安全边界；不要把明文 Excel、密码或解密后的 JSON 提交到本仓库。
 
 ## 🔐 更新订单履约分析
 
@@ -139,7 +139,7 @@ cd <你的仓库路径>\jd-supplychain-public
 
 默认发布最近3个库存切片，每个切片独立加密。页面解锁后只下载用户选择的切片，并在浏览器中执行确定性分仓与upcharge计算。用户在“数据与规则”页面修改的城市映射和费率只保存在当前浏览器`localStorage`，不影响团队默认密文。
 
-履约页使用独立DPAPI密码文件`%LOCALAPPDATA%\JD-SupplyChain\fulfillment-pages-password.xml`。当前访问密码为8位小写字母；静态密文可被离线尝试破解，建议后续提高到至少12位。构建与推送：
+履约页使用独立DPAPI密码文件`%LOCALAPPDATA%\JD-SupplyChain\fulfillment-pages-password.xml`。静态密文可被离线尝试破解，建议使用至少12位的强密码。构建与推送：
 
 ```powershell
 cd <你的仓库路径>\jd-supplychain-public
