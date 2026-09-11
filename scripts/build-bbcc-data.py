@@ -9,10 +9,15 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 ROOT = Path(__file__).resolve().parents[1]
+WORKSPACE_APPS_ROOT = ROOT.parent / "jd-supplychain-apps"
 DEFAULT_APP_ASSETS = Path(
     os.getenv(
         "JD_SUPPLYCHAIN_APPS_ROOT",
-        str(Path.home() / "repos" / "jd-supplychain-apps"),
+        str(
+            WORKSPACE_APPS_ROOT
+            if WORKSPACE_APPS_ROOT.exists()
+            else Path.home() / "repos" / "jd-supplychain-apps"
+        ),
     )
 ) / "apps" / "jd_free_goods_bbcc_cost_simulation" / "assets"
 ITERATIONS = 600_000

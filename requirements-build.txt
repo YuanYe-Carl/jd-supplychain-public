@@ -1,5 +1,6 @@
 cryptography>=44,<46
+chinese-calendar>=1.10,<2.0
 openpyxl>=3.1,<4.0
 pandas>=2.2,<3.0
+python-calamine>=0.6,<0.9
 pyecharts>=2.0,<3.0
-python-calamine>=0.5,<1.0
