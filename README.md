@@ -2,21 +2,21 @@
 
 JD 供应链团队知识库的**对外发布站**（GitHub Pages 托管）。所有网页在此维护，通过下面的门户统一导航。
 
-🌐 **发布站根地址**：<https://wherebryce.github.io/jd-supplychain-public/>
+🌐 **发布站根地址**：<https://yuanye-carl.github.io/jd-supplychain-public/>
 
 ## 🧭 网页导航
 
 | 页面 | 类型 | 说明 | 链接 |
 |---|---|---|---|
-| 门户首页 | 导航 | 所有页面的总入口（页面目录） | <https://wherebryce.github.io/jd-supplychain-public/> |
-| 团队知识库使用指南 | 指南 | 怎么往 Inbox 贡献材料、云⇄本地运转方式、AI 协作触 发词（含二维码） | <https://wherebryce.github.io/jd-supplychain-public/pages/guide.html> |
-| 仓配费节降通用框架 | 洞察·仓配成本 | 仓配费 = 非异常+异常，按 费项→方式→抓手  三层拆解的跨品类节降骨架（含流程图） | <https://wherebryce.github.io/jd-supplychain-public/pages/warehouse-cost-reduction.html> |
-| JD 仓网入门 | 新人·仓网 | 11 大 RDC、三层级 8→62 仓、RDC vs 配送中心、库存流转、布货决策、枢纽仓与常见坑（含流程图） | <https://wherebryce.github.io/jd-supplychain-public/pages/warehouse-network-primer.html> |
-| 轻货仓入门 | 新人·轻货仓 | 六仓网络、低成本逻辑、SKU 准入、消费者路由、库存边界、MOQ，以及与城市仓的核心区别 | <https://wherebryce.github.io/jd-supplychain-public/pages/light-warehouse-primer.html> |
-| JD 库存报告字段词典 | 参考·库存字段 | 商智库存报告全字段逐条识别（现货/可用/可订购公式、滞销库龄、出库销量口径、PV现货率），带即时筛选 | <https://wherebryce.github.io/jd-supplychain-public/pages/jd-inventory-report-fields.html> |
-| RDC 库存查询 | 工具·加密访问 | 密码直入，中文商品名实时联想 5 个候选，支持空格分词、京东码搜索与全部 RDC 筛选 | <https://wherebryce.github.io/jd-supplychain-public/pages/rdc-inventory-query.html> |
-| Free Goods BBCC 灵活费用仿真 | 工具·加密仿真 | 配置B仓、B-C频次、C仓路径、PG→B单趟成本及各环节折扣比例，计算BBCC增量成本和全国加权时效 | <https://wherebryce.github.io/jd-supplychain-public/pages/free-goods-bbcc-cost-simulation.html> |
-| 订单履约分析 | 工具·履约决策 | 使用加密库存与仓网关系分析真实订单或绑赠机制，输出发货模式比例、逐单及平均 upcharge | <https://wherebryce.github.io/jd-supplychain-public/pages/fulfillment-decision.html> |
+| 门户首页 | 导航 | 所有页面的总入口（页面目录） | <https://yuanye-carl.github.io/jd-supplychain-public/> |
+| 团队知识库使用指南 | 指南 | 怎么往 Inbox 贡献材料、云⇄本地运转方式、AI 协作触 发词（含二维码） | <https://yuanye-carl.github.io/jd-supplychain-public/pages/guide.html> |
+| 仓配费节降通用框架 | 洞察·仓配成本 | 仓配费 = 非异常+异常，按 费项→方式→抓手  三层拆解的跨品类节降骨架（含流程图） | <https://yuanye-carl.github.io/jd-supplychain-public/pages/warehouse-cost-reduction.html> |
+| JD 仓网入门 | 新人·仓网 | 11 大 RDC、三层级 8→62 仓、RDC vs 配送中心、库存流转、布货决策、枢纽仓与常见坑（含流程图） | <https://yuanye-carl.github.io/jd-supplychain-public/pages/warehouse-network-primer.html> |
+| 轻货仓入门 | 新人·轻货仓 | 六仓网络、低成本逻辑、SKU 准入、消费者路由、库存边界、MOQ，以及与城市仓的核心区别 | <https://yuanye-carl.github.io/jd-supplychain-public/pages/light-warehouse-primer.html> |
+| JD 库存报告字段词典 | 参考·库存字段 | 商智库存报告全字段逐条识别（现货/可用/可订购公式、滞销库龄、出库销量口径、PV现货率），带即时筛选 | <https://yuanye-carl.github.io/jd-supplychain-public/pages/jd-inventory-report-fields.html> |
+| RDC 库存查询 | 工具·加密访问 | 密码直入，中文商品名实时联想 5 个候选，支持空格分词、京东码搜索与全部 RDC 筛选 | <https://yuanye-carl.github.io/jd-supplychain-public/pages/rdc-inventory-query.html> |
+| Free Goods BBCC 灵活费用仿真 | 工具·加密仿真 | 配置B仓、B-C频次、C仓路径、PG→B单趟成本及各环节折扣比例，计算BBCC增量成本和全国加权时效 | <https://yuanye-carl.github.io/jd-supplychain-public/pages/free-goods-bbcc-cost-simulation.html> |
+| 订单履约分析 | 工具·履约决策 | 使用加密库存与仓网关系分析真实订单或绑赠机制，输出发货模式比例、逐单及平均 upcharge | <https://yuanye-carl.github.io/jd-supplychain-public/pages/fulfillment-decision.html> |
 
 ## 📁 目录结构
 
