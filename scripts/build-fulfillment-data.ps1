@@ -12,6 +12,8 @@ $Builder = Join-Path $PSScriptRoot 'build-fulfillment-data.py'
 if (-not $AppAssets) {
     $appsRoot = if ($env:JD_SUPPLYCHAIN_APPS_ROOT) {
         $env:JD_SUPPLYCHAIN_APPS_ROOT
+    } elseif (Test-Path -LiteralPath (Join-Path (Split-Path -Parent $RepoRoot) 'jd-supplychain-apps')) {
+        Join-Path (Split-Path -Parent $RepoRoot) 'jd-supplychain-apps'
     } else {
         Join-Path $env:USERPROFILE 'repos\jd-supplychain-apps'
     }
