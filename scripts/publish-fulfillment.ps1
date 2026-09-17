@@ -33,7 +33,11 @@ $RelativeOutputs = @(
 $GitBase = @('-c', "safe.directory=$RepoRoot", '-C', $RepoRoot)
 
 function Get-SourceFingerprint {
-    $inventoryDirectory = Join-Path $SourceDirectory 'JD库存大表'
+    $inventoryDirectory = if ($env:JD_INVENTORY_DIR) {
+        $env:JD_INVENTORY_DIR
+    } else {
+        Join-Path $env:USERPROFILE 'Procter and Gamble\JD PS 铁军 - 文档\03 库存管理\每日库存'
+    }
     $latest = Get-ChildItem -LiteralPath $inventoryDirectory -Filter '*.xlsx' -File |
         Where-Object Name -NotLike '~$*' |
         Sort-Object Name -Descending |

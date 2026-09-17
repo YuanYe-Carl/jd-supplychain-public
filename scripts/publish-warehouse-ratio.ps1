@@ -23,7 +23,13 @@ if (-not $InventoryDirectory -or -not $Direct) {
     } else {
         Join-Path $env:USERPROFILE 'Procter and Gamble\JD PS 铁军 - 文档\17 SND\18. 代发治理\拆单或代发判断数据基础'
     }
-    if (-not $InventoryDirectory) { $InventoryDirectory = Join-Path $sourceDirectory 'JD库存大表' }
+    if (-not $InventoryDirectory) {
+        $InventoryDirectory = if ($env:JD_INVENTORY_DIR) {
+            $env:JD_INVENTORY_DIR
+        } else {
+            Join-Path $env:USERPROFILE 'Procter and Gamble\JD PS 铁军 - 文档\03 库存管理\每日库存'
+        }
+    }
     if (-not $Direct) { $Direct = Join-Path $sourceDirectory '宝洁直送明细.xlsx' }
 }
 if (-not $MappingDirectory) {
@@ -76,7 +82,7 @@ function Get-LatestDatedFile {
 }
 
 function Get-Fingerprint {
-    $inventory = Get-LatestDatedFile $InventoryDirectory '下沉用-*.xlsx'
+    $inventory = Get-LatestDatedFile $InventoryDirectory '*.xlsx'
     $mapping = Get-LatestDatedFile $MappingDirectory 'JD_11RDC配送中心映射_*.csv'
     $directItem = Get-Item -LiteralPath $Direct
     return [ordered]@{

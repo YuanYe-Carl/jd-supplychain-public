@@ -36,7 +36,18 @@ DEFAULT_SOURCE_DIR = Path(
         ),
     )
 )
-DEFAULT_INVENTORY_DIR = DEFAULT_SOURCE_DIR / "JD库存大表"
+DEFAULT_INVENTORY_DIR = Path(
+    os.getenv(
+        "JD_INVENTORY_DIR",
+        str(
+            Path.home()
+            / "Procter and Gamble"
+            / "JD PS 铁军 - 文档"
+            / "03 库存管理"
+            / "每日库存"
+        ),
+    )
+)
 DEFAULT_DIRECT = DEFAULT_SOURCE_DIR / "宝洁直送明细.xlsx"
 DEFAULT_MAPPING_DIR = (
     Path(
@@ -203,7 +214,7 @@ def copy_with_retries(source: Path, destination: Path, attempts: int = 3) -> Non
 def stage_inventory(
     inventory_dir: Path, cache_dir: Path
 ) -> tuple[Path, Path, bool, str]:
-    candidates = dated_files(inventory_dir, "下沉用-*.xlsx")
+    candidates = dated_files(inventory_dir, "*.xlsx")
     if not candidates:
         raise BuildError(f"未找到库存切片：{inventory_dir}")
     latest = candidates[0]
@@ -213,7 +224,7 @@ def stage_inventory(
         copy_with_retries(latest, cached_latest)
         return cached_latest, latest, False, ""
     except BuildError:
-        cached = dated_files(cache_dir / "inventory", "下沉用-*.xlsx") if (
+        cached = dated_files(cache_dir / "inventory", "*.xlsx") if (
             cache_dir / "inventory"
         ).exists() else []
         if cached:
