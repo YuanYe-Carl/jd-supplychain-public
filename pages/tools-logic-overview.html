@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>三个决策工具的底层逻辑 · JD Supply Chain</title>
+<meta name="description" content="用简单的话说明 Free Goods BBCC 费用仿真、11RDC/62仓备货仓比、消费者订单履约判定与 Upcharge 三个工具的数据来源、核心判断与实现功能。" />
+<style>
+  :root{
+    --bg:#080d1b;--panel:#111936;--panel2:#0d1530;--line:#26345f;--ink:#edf3ff;
+    --muted:#9aabd0;--blue:#6f8cff;--mint:#62dfbd;--amber:#ffd166;--violet:#b49cff;
+    --red:#ff7b86;--radius:16px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;font-family:"Segoe UI",system-ui,-apple-system,"Microsoft YaHei",sans-serif;
+    color:var(--ink);line-height:1.7;background:
+      radial-gradient(circle at 8% 2%,rgba(111,140,255,.18),transparent 30rem),
+      radial-gradient(circle at 92% 14%,rgba(98,223,189,.1),transparent 25rem),
+      var(--bg);
+  }
+  a{color:inherit;text-decoration:none}
+  .wrap{width:min(1080px,calc(100% - 36px));margin:0 auto}
+
+  nav{
+    position:sticky;top:0;z-index:30;border-bottom:1px solid var(--line);
+    background:rgba(8,13,27,.88);backdrop-filter:blur(14px);
+  }
+  .nav-inner{display:flex;align-items:center;gap:20px;min-height:58px}
+  .brand{font-size:14px;font-weight:800;white-space:nowrap}
+  .brand span{color:var(--mint)}
+  .nav-links{display:flex;gap:16px;margin-left:auto;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-links a{color:var(--muted);font-size:12.5px}
+  .nav-links a:hover{color:var(--ink)}
+
+  .hero{padding:64px 0 40px}
+  .eyebrow{margin:0 0 12px;color:var(--mint);font-size:12px;font-weight:800;letter-spacing:.11em}
+  h1{margin:0;font-size:clamp(32px,5vw,52px);line-height:1.1;letter-spacing:-.04em}
+  h1 em{
+    display:block;font-style:normal;background:linear-gradient(95deg,var(--blue),var(--mint));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero-lead{max-width:760px;margin:20px 0 0;color:#c5d2ee;font-size:17px}
+  .hero-note{margin:14px 0 0;color:var(--muted);font-size:13px}
+
+  .toolstrip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:30px}
+  .toolstrip a{
+    position:relative;display:flex;flex-direction:column;padding:17px 18px;overflow:hidden;
+    border:1px solid var(--line);border-radius:var(--radius);
+    background:linear-gradient(145deg,var(--panel),var(--panel2));
+    transition:transform .15s ease,border-color .15s ease;
+  }
+  .toolstrip a::after{
+    content:"";position:absolute;right:-36px;top:-42px;width:105px;height:105px;
+    border-radius:50%;background:var(--accent);opacity:.09;
+  }
+  .toolstrip a:hover{transform:translateY(-2px);border-color:var(--accent)}
+  .toolstrip .t1{--accent:var(--mint)}
+  .toolstrip .t2{--accent:var(--violet)}
+  .toolstrip .t3{--accent:var(--amber)}
+  .toolstrip .num{position:relative;z-index:1;color:var(--accent);font-size:11px;font-weight:800;letter-spacing:.08em}
+  .toolstrip h3{position:relative;z-index:1;margin:7px 0 6px;font-size:16px;line-height:1.3}
+  .toolstrip p{position:relative;z-index:1;margin:0;color:var(--muted);font-size:12.5px}
+  .toolstrip .go{position:relative;z-index:1;margin-top:auto;padding-top:9px;color:var(--accent);font-size:11.5px;font-weight:700}
+
+  section{padding:52px 0;border-top:1px solid rgba(38,52,95,.72)}
+  .section-kicker{display:block;margin-bottom:5px;color:var(--mint);font-size:11px;font-weight:800;letter-spacing:.09em}
+  h2{margin:0 0 10px;font-size:clamp(23px,3vw,31px);line-height:1.22;letter-spacing:-.02em}
+  h3{margin:26px 0 9px;font-size:17px}
+  .lead{max-width:860px;margin:0 0 22px;color:var(--muted)}
+
+  .oneline{
+    margin:0 0 24px;padding:17px 20px;border:1px solid rgba(111,140,255,.4);
+    border-left:4px solid var(--blue);border-radius:0 14px 14px 0;
+    background:linear-gradient(120deg,rgba(111,140,255,.1),rgba(17,25,54,.88) 34%);
+    font-size:15.5px;color:#e4ebfb;
+  }
+  .oneline b{color:#fff}
+
+  .table-wrap{width:100%;margin:16px 0;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{padding:12px 14px;border:1px solid var(--line);text-align:left;vertical-align:top}
+  th{background:#0d1530;color:var(--muted);font-weight:700}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.018)}
+  td b,th b{color:#fff}
+
+  .steps{display:grid;gap:11px;margin:18px 0}
+  .steps article{
+    display:grid;grid-template-columns:44px minmax(0,1fr);gap:15px;align-items:start;
+    padding:16px 18px;border:1px solid var(--line);border-radius:13px;background:rgba(17,25,54,.7);
+  }
+  .steps article>span{
+    display:grid;place-items:center;width:36px;height:36px;border-radius:11px;
+    background:rgba(98,223,189,.12);color:var(--mint);font-weight:800;font-size:13px;
+  }
+  .steps h4{margin:0 0 4px;font-size:15.5px}
+  .steps p{margin:0;color:var(--muted);font-size:13.5px}
+  .steps p + p{margin-top:6px}
+
+  .callout{
+    margin:18px 0;padding:15px 18px;border:1px solid var(--line);border-left:3px solid var(--blue);
+    border-radius:0 12px 12px 0;background:rgba(17,25,54,.66);color:#dfe7f8;font-size:13.5px;
+  }
+  .callout.tip{border-left-color:var(--mint)}
+  .callout.warn{border-left-color:var(--amber)}
+  .callout.danger{border-left-color:var(--red)}
+  .callout .title{display:block;margin-bottom:4px;color:#fff;font-weight:800}
+  .callout p{margin:6px 0 0}
+
+  .formula{
+    margin:16px 0;padding:15px 18px;border:1px solid var(--line);border-radius:12px;
+    background:#080d1b;color:#dce6ff;font-family:"Cascadia Code",Consolas,monospace;
+    font-size:13px;overflow-x:auto;
+  }
+  .formula b{color:var(--mint)}
+
+  .cards{display:grid;gap:13px;margin:18px 0}
+  .cards.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cards.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .card{
+    padding:18px;border:1px solid var(--line);border-radius:var(--radius);
+    background:linear-gradient(145deg,var(--panel),var(--panel2));
+  }
+  .card .label{display:block;margin-bottom:7px;color:var(--mint);font-size:10.5px;font-weight:800;letter-spacing:.06em}
+  .card.amber .label{color:var(--amber)}
+  .card.violet .label{color:var(--violet)}
+  .card.red .label{color:var(--red)}
+  .card h4{margin:0 0 7px;font-size:15.5px}
+  .card p{margin:0;color:var(--muted);font-size:13px}
+
+  .decision{display:grid;gap:10px;margin:18px 0}
+  .decision .row{
+    display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1.25fr);gap:14px;align-items:center;
+    padding:13px 16px;border:1px solid var(--line);border-radius:12px;background:rgba(8,13,27,.5);
+  }
+  .decision .q{font-size:13.5px;color:#cdd8ef}
+  .decision .arrow{color:var(--amber);font-weight:800}
+  .decision .a{font-size:13.5px;font-weight:700}
+
+  .priority{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:16px 0}
+  .priority span{
+    padding:8px 13px;border:1px solid var(--line);border-radius:999px;
+    background:rgba(17,25,54,.8);font-size:12.5px;
+  }
+  .priority span:first-child{border-color:var(--mint);color:var(--mint);font-weight:700}
+  .priority i{color:var(--muted);font-style:normal;font-size:12px}
+
+  ul,ol{padding-left:21px;margin:12px 0}
+  li{margin:6px 0;color:#cdd8ef;font-size:14px}
+  li strong{color:#fff}
+  code{
+    padding:1px 6px;border:1px solid var(--line);border-radius:6px;
+    background:#0a0f22;color:#cfe0ff;font-family:"Cascadia Code",Consolas,monospace;font-size:12.5px;
+  }
+
+  .compare th:first-child{width:170px}
+  .yes{color:var(--mint);font-weight:800}
+
+  footer{padding:30px 0 40px;color:#7889af;text-align:center;font-size:12px;border-top:1px solid var(--line)}
+
+  @media(max-width:900px){
+    .toolstrip,.cards.three{grid-template-columns:1fr}
+    .cards.two{grid-template-columns:1fr}
+    .decision .row{grid-template-columns:1fr;gap:6px}
+    .decision .arrow{display:none}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-inner">
+    <div class="brand">JD Supply <span>Chain</span></div>
+    <div class="nav-links">
+      <a href="../index.html">返回首页</a>
+      <a href="#bbcc">BBCC 仿真</a>
+      <a href="#ratio">备货仓比</a>
+      <a href="#fulfillment">履约与 Upcharge</a>
+      <a href="#compare">横向对比</a>
+      <a href="#principles">共同原则</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero wrap">
+  <p class="eyebrow">TOOLS · 底层逻辑说明</p>
+  <h1>三个决策工具<em>到底在算什么</em></h1>
+  <p class="hero-lead">
+    用不绕弯子的话，讲清楚 Free Goods BBCC 费用仿真、11RDC/62仓备货仓比、消费者订单履约判定这三个工具各自的
+    <strong>数据来源、核心判断规则和输出结果</strong>，方便在用之前先明白它凭什么给出这个数。
+  </p>
+  <p class="hero-note">三个工具都是确定性计算，不使用生成式模型推算库存与成本；相同输入必然得到相同结果。</p>
+
+  <div class="toolstrip">
+    <a class="t1" href="./free-goods-bbcc-cost-simulation.html">
+      <span class="num">工具一 · 仿真</span>
+      <h3>Free Goods BBCC 费用仿真</h3>
+      <p>赠品改走 B 仓中转，一年多花多少钱、慢多少天。</p>
+      <span class="go">打开工具 →</span>
+    </a>
+    <a class="t2" href="./warehouse-ratio-query.html">
+      <span class="num">工具二 · 查询</span>
+      <h3>11RDC / 62仓备货仓比</h3>
+      <p>这批货备到全国各仓，每个仓该放百分之多少。</p>
+      <span class="go">打开工具 →</span>
+    </a>
+    <a class="t3" href="./fulfillment-decision.html">
+      <span class="num">工具三 · 判定</span>
+      <h3>订单履约判定与 Upcharge</h3>
+      <p>一单会从哪几个仓发、算不算拆单、要多付多少钱。</p>
+      <span class="go">打开工具 →</span>
+    </a>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ 工具一 ============ -->
+<section id="bbcc" class="wrap">
+  <span class="section-kicker">TOOL 01</span>
+  <h2>Free Goods BBCC 费用仿真</h2>
+
+  <p class="oneline">
+    它回答一个问题：<b>HC 赠品如果不再全部走京东 11 大仓直送，而是先囤到「B 仓」再分发到各个城市，一年要多花多少钱、货到得慢多少天。</b>
+  </p>
+
+  <h3>用了哪些数据</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>数据来源</th><th>在算法里的作用</th></tr></thead>
+      <tbody>
+        <tr><td>赠品 SKU 清单（箱规、首件 / 续件 / 整箱出库费）</td><td>计算出库费</td></tr>
+        <tr><td>FY2526 历史月度发货量（数量、体积、重量）</td><td>作为未来货量的推算基础</td></tr>
+        <tr><td>近 90 日各收货地商品件数</td><td>决定每个城市分到多少货</td></tr>
+        <tr><td>BBCC 新报价表（13 个 B 仓地址 + 运输报价）</td><td>计算运输费与时效</td></tr>
+        <tr><td>11 区域对应关系</td><td>没有可用线路时收敛回 11 大仓</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>底层逻辑六步</h3>
+  <div class="steps">
+    <article>
+      <span>01</span>
+      <div>
+        <h4>把货分到城市</h4>
+        <p>拿每个 SKU 的历史月发货量，按「近 90 日各城市销量占比」摊到各个 C 城市。</p>
+        <p>占比之和不到 100% 的部分算作未建模，单独列入异常清单，<strong>不会硬凑成 100%</strong>。</p>
+      </div>
+    </article>
+    <article>
+      <span>02</span>
+      <div>
+        <h4>判断每个城市怎么送</h4>
+        <p>北京、上海、广州等 <strong>11 个 RDC 城市默认宝洁直送</strong>，不产生 BBCC 费用；其他城市走 B 仓中转。每个城市的走法都可以在界面上手工覆盖。</p>
+      </div>
+    </article>
+    <article>
+      <span>03</span>
+      <div>
+        <h4>选哪个 B 仓（核心判断）</h4>
+        <p>对每个 C 城市，把所有启用的 B 仓各试一遍，算出<strong>全年运输总费用</strong>，谁最便宜选谁。</p>
+        <p>若手工指定的 B 仓没报价、或所有 B 仓都没有到该城市的线路，则<strong>回退成 11 大仓代发</strong>，费用记 0，并明确写进异常清单。</p>
+      </div>
+    </article>
+    <article>
+      <span>04</span>
+      <div>
+        <h4>按调拨频次拆任务</h4>
+        <p>用<strong>中国工作日历</strong>（含法定节假日调休）算出全年可调拨日，再按选定频次（每工作日 / 每周 1–5 次）得出每月任务数。</p>
+        <p>月货量 ÷ 任务数 = 单次任务量。<strong>发得越频繁，单次的量越小，单位成本越吃亏。</strong></p>
+      </div>
+    </article>
+    <article>
+      <span>05</span>
+      <div>
+        <h4>算钱（四类费用）</h4>
+        <p><strong>运输费</strong>：计费重量取 max(实际重量, 体积×200)，抛货按体积重算，再按 ≤1000kg / &gt;1000kg 两档单价。</p>
+        <p><strong>出库费</strong>：能凑整箱的按整箱费；剩下散支只收一笔最贵的首件费，其余按续件费。</p>
+        <p><strong>保费</strong>：货量 × 货值 3 元 × 万分之 5，只对走 BBCC 的货收。<strong>PG→B 运输</strong>：月趟数 × 单趟费用。</p>
+      </div>
+    </article>
+    <article>
+      <span>06</span>
+      <div>
+        <h4>算时效</h4>
+        <p>走 BBCC 为 <code>PG→B 天数 + B-C 报价时效</code>（报价写 <code>3D2359</code> 按 4 天算）；直送与回退使用 11 大仓直送时效。</p>
+        <p>全国平均按<strong>货量加权</strong>；直送的货计入时效，但完全不计入成本。</p>
+      </div>
+    </article>
+  </div>
+
+  <div class="formula">
+    计费重量 = <b>max</b>(实际重量 kg, 体积 m³ × 200)&nbsp;&nbsp;|&nbsp;&nbsp;单次任务量 = 月货量 ÷ 当月任务数
+  </div>
+
+  <div class="callout tip">
+    <span class="title">折扣比例可调</span>
+    默认 PG→B 运输 100%、B-C 运输 60%、整箱与散支出库 50%、存储 50%、保费 100%，全部可在界面上修改后重新测算。
+  </div>
+
+  <h3>实现了什么功能</h3>
+  <ul>
+    <li>本机网页界面，可调 13 个 B 仓的启用状态、月趟数、单趟费用、调拨频次、折扣比例与逐城市路由</li>
+    <li>一次仿真同时给出<strong>全年增量费用拆解 + 全国加权时效 + BBCC 覆盖率</strong></li>
+    <li>导出 Excel：城市路由与时效、各 B 仓候选成本对比、月度任务明细、PG→B 容量校验、异常清单</li>
+  </ul>
+
+  <div class="callout warn">
+    <span class="title">异常不掩盖</span>
+    没有报价的线路、销量未映射完整的 SKU、平均每次任务不足 1 支的城市，都会单独列出来交给人判断，而不是自动填一个默认值糊弄过去。
+  </div>
+</section>
+
+<!-- ============ 工具二 ============ -->
+<section id="ratio" class="wrap">
+  <span class="section-kicker">TOOL 02</span>
+  <h2>11RDC / 62仓备货仓比查询</h2>
+
+  <p class="oneline">
+    它回答：<b>我这批货（某个品牌 / 类目 / SKU 清单）要备到全国仓库里，每个仓该放百分之多少。</b>
+    并且同时给出两套答案——只铺 11 个大仓，和铺 62 个直送仓。
+  </p>
+
+  <h3>用了哪些数据</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>数据来源</th><th>在算法里的作用</th></tr></thead>
+      <tbody>
+        <tr><td>JD 库存大表（自动取最新切片）</td><td>提供 SKU、品牌、三级类目、采购价，以及<strong>近 90 日各配送中心收货件数</strong></td></tr>
+        <tr><td>宝洁直送明细</td><td>确定哪 62 个是普通 C 仓，以及每个仓的城市与仓型</td></tr>
+        <tr><td>11RDC 映射表</td><td>把杂乱的配送中心名字对应到 11 大仓</td></tr>
+        <tr><td>城市经纬度库</td><td>计算球面距离，用于就近归仓</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>底层逻辑四步</h3>
+  <div class="steps">
+    <article>
+      <span>01</span>
+      <div>
+        <h4>先把仓库名字理清楚</h4>
+        <p>库存大表里的配送中心名字很乱——「上海FDC」「北京大商超」「徐州FDC配送中心」「南通本地仓中心」。先用别名表和后缀剥离，统一成标准城市名。</p>
+      </div>
+    </article>
+    <article>
+      <span>02</span>
+      <div>
+        <h4>每个配送中心归到哪个 62 仓（核心判断）</h4>
+        <p>如果它<strong>本身就是</strong> 62 个普通 C 仓之一，归给自己；否则用经纬度算<strong>球面距离</strong>，找地理上<strong>最近的</strong>那个普通 C 仓城市。</p>
+      </div>
+    </article>
+    <article>
+      <span>03</span>
+      <div>
+        <h4>每个配送中心归到哪个 11RDC</h4>
+        <p>优先查映射表；表里没有就<strong>反推</strong>——看这个配送中心下的 SKU 里哪个 RDC 出现次数最多，就归给谁。</p>
+      </div>
+    </article>
+    <article>
+      <span>04</span>
+      <div>
+        <h4>算比例</h4>
+        <p>用「近 90 日收货地商品件数」当需求权重，把每个配送中心的销量累加到它对应的 11RDC 和 62 仓上，再各自除以总量。</p>
+      </div>
+    </article>
+  </div>
+
+  <div class="formula">
+    某仓仓比 = 该仓归集的 90 日销量 ÷ 全部选中 SKU 的 90 日销量
+  </div>
+
+  <h3>一个值得说的设计：边界仓标记</h3>
+  <p class="lead">
+    按「最近距离」归仓有个隐患——有些城市<strong>夹在两个仓中间</strong>，归给谁都说得通，但结果会差很多。
+  </p>
+  <div class="cards two">
+    <div class="card amber">
+      <span class="label">触发条件（满足任一）</span>
+      <h4>标记为「边界」</h4>
+      <p>最近仓与第二近仓的距离差 &lt; 150 公里；或最近距离 ÷ 第二近距离 &gt; 0.8。</p>
+    </div>
+    <div class="card">
+      <span class="label">配套输出</span>
+      <h4>第二候选仓与距离</h4>
+      <p>提醒你这行归属不稳，业务上换个仓也合理，别盲信这个数。</p>
+    </div>
+  </div>
+
+  <h3>实现了什么功能</h3>
+  <ul>
+    <li>网页查询（发布在 GitHub Pages），按<strong>品牌 / 一二三级类目 / SKU 清单 / 采购价是否为 0</strong> 筛选</li>
+    <li>同时输出 <strong>11RDC 方案</strong>与 <strong>62 仓方案</strong>两套比例，可切换「11 仓备货只发 11 城」或「62 仓发全国」</li>
+    <li>可选择只看某类仓（11RDC / 普通C仓 / 城市仓 / 轻货仓）</li>
+    <li>导出 Excel，含每个原始配送中心的完整映射轨迹（归到哪、距离多远、第二候选是谁、是否边界、置信度）</li>
+    <li>每天自动检查库存切片是否更新，有更新就重建</li>
+  </ul>
+
+  <div class="callout">
+    <span class="title">两个容易被忽略的口径</span>
+    <p><strong>轻货仓默认不计入仓比</strong>——它走另一套逻辑，混进来会扭曲比例；但排除掉的销量会单独列出，不是偷偷丢掉。</p>
+    <p><strong>数据是加密发布的</strong>——含内部销量，模型用 AES-GCM 加密、PBKDF2 迭代 60 万次派生密钥，页面需输入密码才能解开，原始数据不会明文进入 GitHub。</p>
+  </div>
+
+  <div class="callout danger">
+    <span class="title">宁可报错也不糊弄</span>
+    构建时有几道硬校验，不满足直接中断：普通 C 仓必须<strong>正好 62 个</strong>；同一城市<strong>不能有两个</strong>普通 C 仓；<strong>有销量</strong>的配送中心必须能找到 11RDC 与 62 仓归属。
+    这样保证比例合计一定是 100%，不会有货凭空消失在某个没映射上的仓里。
+  </div>
+</section>
+
+<!-- ============ 工具三 ============ -->
+<section id="fulfillment" class="wrap">
+  <span class="section-kicker">TOOL 03</span>
+  <h2>消费者订单履约判定与 Upcharge</h2>
+
+  <p class="oneline">
+    它回答：<b>一个消费者下单后，京东会从哪几个仓发货、算不算拆单、宝洁要为此多付多少钱。</b>
+  </p>
+
+  <h3>三个核心概念</h3>
+  <div class="cards three">
+    <div class="card">
+      <span class="label">FULFILLMENT FROM</span>
+      <h4>履约 from</h4>
+      <p>发货点，粒度是「配送中心 + 库房名称」。同一配送中心下两个库房算两个 from。</p>
+    </div>
+    <div class="card violet">
+      <span class="label">FULFILLMENT TO</span>
+      <h4>履约 to</h4>
+      <p>消费者城市收敛后的应发货城市；非直送城市归到所属 11 区域核心城市。</p>
+    </div>
+    <div class="card amber">
+      <span class="label">NETWORK</span>
+      <h4>网络（仓型）</h4>
+      <p>普通 C 仓 / 轻货仓 / 城市仓，决定计费方式与覆盖范围。</p>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <span class="title">一个容易搞混的点</span>
+    仓库<strong>能覆盖</strong>某个城市 ≠ 它是<strong>本地仓</strong>。是不是「本地」，永远比较<strong>物理城市</strong>与应发货城市。
+  </div>
+
+  <h3>第一层判断：这是什么订单</h3>
+  <div class="decision">
+    <div class="row">
+      <span class="q">同时包含至少一个主品和一个赠品</span>
+      <span class="arrow">→</span>
+      <span class="a">绑赠订单</span>
+    </div>
+    <div class="row">
+      <span class="q">非绑赠，且全部 SKU 的一级类目唯一</span>
+      <span class="arrow">→</span>
+      <span class="a">同品类订单</span>
+    </div>
+    <div class="row">
+      <span class="q">非绑赠，且存在多个一级类目</span>
+      <span class="arrow">→</span>
+      <span class="a">跨品类订单</span>
+    </div>
+    <div class="row">
+      <span class="q">任一 SKU 一级类目缺失</span>
+      <span class="arrow">→</span>
+      <span class="a">保守按跨品类处理</span>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <span class="title">为什么先判类型</span>
+    因为业务上绑赠和同品类订单<strong>不希望轻易拆单</strong>——赠品和主品分开发，消费者体验差。
+  </div>
+
+  <h3>第二层判断：选发货仓</h3>
+  <ul>
+    <li><strong>绑赠 / 同品类订单</strong>：先搜索「同区 + 单个仓 + 整单发完」的方案。只要存在可行解就在其中选择，<strong>哪怕本地有部分库存也不拆单</strong></li>
+    <li><strong>跨品类订单</strong>，或上面找不到解：进入通用分仓策略</li>
+  </ul>
+
+  <p class="lead">通用分仓的排序优先级，依次比较：</p>
+  <div class="priority">
+    <span>本地承担量最大</span><i>→</i>
+    <span>覆盖层级最优</span><i>→</i>
+    <span>总 upcharge 最低</span><i>→</i>
+    <span>from 数最少</span><i>→</i>
+    <span>固定 from 顺序</span>
+  </div>
+
+  <div class="callout">
+    <span class="title">注意第一顺位不是成本</span>
+    先尽量让本地仓多发，再谈省钱。覆盖层级从优到劣为：<strong>原覆盖关系</strong> → 轻货仓跨区兜底 → 普通 C 仓全国平行兜底。
+  </div>
+
+  <h3>Upcharge 怎么算</h3>
+  <p class="lead"><strong>基础仓（第一个 from）不收费</strong>，费用只来自「多出来的仓」。</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>场景</th><th>费用</th></tr></thead>
+      <tbody>
+        <tr><td>每个新增<strong>普通 C 仓</strong></td><td>生产费 1.5 元</td></tr>
+        <tr><td>每个新增<strong>轻货仓 / 城市仓</strong></td><td>生产费 1 元 + 配送费 2 元</td></tr>
+        <tr><td>上一行，但订单里有<strong>本地普通 C 仓</strong></td><td>生产费抵减 0.3 元 → 合计 <strong>2.7 元</strong></td></tr>
+        <tr><td>同区跨城配送</td><td>0.8 元，<strong>整单只收一次</strong></td></tr>
+        <tr><td>跨区配送</td><td>每个跨区子单 3 元，<strong>累计</strong></td></tr>
+        <tr><td>本地普通 C 仓 + 跨区拆单</td><td>每个跨区子单<strong>另加</strong> 4 元基础配送费</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout warn">
+    <span class="title">一条容易漏的规则</span>
+    跨网配送费 3 元与普通地理配送费<strong>取高、不叠加</strong>，不会两笔都收。
+  </div>
+
+  <h3>输出三组标签</h3>
+  <div class="cards three">
+    <div class="card">
+      <span class="label">地理</span>
+      <h4>本地同城 / 同区跨城 / 跨区</h4>
+      <p>按所有 from 的物理城市与应发货城市比较得出。</p>
+    </div>
+    <div class="card violet">
+      <span class="label">网络</span>
+      <h4>同网 / 跨网</h4>
+      <p>全部 from 仓型相同为同网，否则为跨网。</p>
+    </div>
+    <div class="card amber">
+      <span class="label">仓级</span>
+      <h4>同仓 / 跨仓</h4>
+      <p>一个 from 为同仓，多个为跨仓。严格按「配送中心 + 库房名称」识别。</p>
+    </div>
+  </div>
+  <p>三者组合即为发货模式，例如 <code>本地同城发货 / 同网 / 同仓</code>。</p>
+
+  <h3>实现了什么功能</h3>
+  <ol>
+    <li><strong>真实订单批量判定</strong>——从 Excel 粘贴「订单号 / 收货城市 / JD码 / 数量」四列，逐单算发货方式与 upcharge</li>
+    <li><strong>绑赠机制模拟</strong>——还没有真实订单时，用主品的近 90 日收货地商品件数模拟全国城市分布，推算机制铺开后各发货模式占比与平均每单 upcharge</li>
+    <li><strong>网页配置</strong>——城市收敛映射、库存切片选择、各项费率均可在界面修改，保存后立即生效</li>
+    <li>输出各模式比例、平均每单 upcharge、每 1000 单 upcharge</li>
+  </ol>
+
+  <div class="callout tip">
+    <span class="title">分仓求解用的是精确搜索，不是贪心</span>
+    代码里用带缓存的递归穷举所有可行仓组合（本质是集合覆盖问题），保证找到真正的最优解。
+    贪心在这里会出错——比如某个仓看着能发最多，但选了它反而逼出更多跨区子单。
+  </div>
+
+  <div class="callout">
+    <span class="title">库存口径很保守</span>
+    <p>按<code>可订购库存 &gt; 0</code>使用，<strong>负数按 0 处理</strong>。</p>
+    <p>库存表没有库房名称时，靠<code>RDC + 配送中心 + 品类</code>唯一连接直送明细，<strong>一旦出现一对多就停止，绝不复制库存</strong>凑数。</p>
+    <p>多个订单之间<strong>互不影响</strong>，不按顺序扣减库存——目的是分析这类订单典型会怎么发，而非模拟某一天的真实履约顺序。</p>
+  </div>
+</section>
+
+<!-- ============ 对比 ============ -->
+<section id="compare" class="wrap">
+  <span class="section-kicker">COMPARISON</span>
+  <h2>三个工具横向对比</h2>
+  <p class="lead">同样是仓网相关，但回答的问题、时间尺度和输出粒度完全不同。</p>
+
+  <div class="table-wrap">
+    <table class="compare">
+      <thead>
+        <tr>
+          <th></th>
+          <th>BBCC 费用仿真</th>
+          <th>备货仓比查询</th>
+          <th>履约判定与 Upcharge</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>回答的问题</b></td>
+          <td>改走 B 仓会多花多少钱</td>
+          <td>每个仓该放多少货</td>
+          <td>这一单会怎么发、多付多少</td>
+        </tr>
+        <tr>
+          <td><b>决策层级</b></td>
+          <td>网络设计（要不要建 B 仓）</td>
+          <td>库存布局（货放哪）</td>
+          <td>单笔履约（怎么发出去）</td>
+        </tr>
+        <tr>
+          <td><b>时间尺度</b></td>
+          <td>全财年</td>
+          <td>近 90 日滚动</td>
+          <td>单笔订单瞬时</td>
+        </tr>
+        <tr>
+          <td><b>核心权重</b></td>
+          <td>历史发货量 × 城市销量份额</td>
+          <td>近 90 日收货地商品件数</td>
+          <td>实时可订购库存</td>
+        </tr>
+        <tr>
+          <td><b>关键判断</b></td>
+          <td>选全年运输费最低的 B 仓</td>
+          <td>球面距离最近的普通 C 仓</td>
+          <td>本地优先 → 覆盖层级 → 成本</td>
+        </tr>
+        <tr>
+          <td><b>主要输出</b></td>
+          <td>增量成本 + 加权时效</td>
+          <td>两套备货比例</td>
+          <td>发货模式 + upcharge</td>
+        </tr>
+        <tr>
+          <td><b>兜底机制</b></td>
+          <td>回退 11R 代发，费用记 0</td>
+          <td>有销量必须有归属，否则报错</td>
+          <td>库存不足则标记无法履约</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 共同原则 ============ -->
+<section id="principles" class="wrap">
+  <span class="section-kicker">DESIGN PRINCIPLES</span>
+  <h2>三个工具共同遵守的原则</h2>
+
+  <div class="cards three">
+    <div class="card">
+      <span class="label">01 · DETERMINISTIC</span>
+      <h4>确定性计算</h4>
+      <p>全部是规则与公式，不用生成式模型推算库存或成本。相同输入必然得到相同结果，算出来的数可以直接拿去对账。</p>
+    </div>
+    <div class="card amber">
+      <span class="label">02 · EXPLICIT</span>
+      <h4>异常显式暴露</h4>
+      <p>没报价的线路、未映射的销量、库存对不上的情况，一律单独列出交给人判断，而不是填默认值掩盖过去。</p>
+    </div>
+    <div class="card red">
+      <span class="label">03 · FAIL FAST</span>
+      <h4>宁可报错不糊弄</h4>
+      <p>关键主数据不满足前提（如普通 C 仓不是 62 个、库房一对多）时直接中断，避免用错误的基础数据算出一个看起来合理的结果。</p>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <span class="title">为什么强调这三点</span>
+    供应链决策的数字一旦进入汇报或谈判，就很难再追溯它是怎么来的。
+    与其给一个「大概对」的漂亮结果，不如在数据不足时明确说不知道——这样每个数字才敢拿出去用。
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    JD Supply Chain · 团队知识库发布站 · 工具底层逻辑说明
+  </div>
+</footer>
+
+</body>
+</html>
