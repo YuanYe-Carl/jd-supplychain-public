@@ -49,17 +49,18 @@ DEFAULT_INVENTORY_DIR = Path(
     )
 )
 DEFAULT_DIRECT = DEFAULT_SOURCE_DIR / "宝洁直送明细.xlsx"
-DEFAULT_MAPPING_DIR = (
-    Path(
-        os.getenv(
-            "JD_SUPPLYCHAIN_APPS_ROOT",
-            str(Path.home() / "repos" / "jd-supplychain-apps"),
-        )
-    )
-    / "apps"
-    / "jd_11rdc_dc_mapping"
-    / "output"
-)
+def _apps_root() -> Path:
+    override = os.getenv("JD_SUPPLYCHAIN_APPS_ROOT")
+    if override:
+        return Path(override)
+    # apps 仓库通常与本仓库平级。
+    sibling = ROOT.parent / "jd-supplychain-apps"
+    if sibling.exists():
+        return sibling
+    return Path.home() / "repos" / "jd-supplychain-apps"
+
+
+DEFAULT_MAPPING_DIR = _apps_root() / "apps" / "jd_11rdc_dc_mapping" / "output"
 DEFAULT_CACHE_DIR = (
     Path(os.getenv("LOCALAPPDATA", str(Path.home())))
     / "JD-SupplyChain"

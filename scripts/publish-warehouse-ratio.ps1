@@ -33,10 +33,16 @@ if (-not $InventoryDirectory -or -not $Direct) {
     if (-not $Direct) { $Direct = Join-Path $sourceDirectory '宝洁直送明细.xlsx' }
 }
 if (-not $MappingDirectory) {
+    # apps 仓库通常与本仓库平级，先找同级目录再回退到 repos。
     $appsRoot = if ($env:JD_SUPPLYCHAIN_APPS_ROOT) {
         $env:JD_SUPPLYCHAIN_APPS_ROOT
     } else {
-        Join-Path $env:USERPROFILE 'repos\jd-supplychain-apps'
+        $sibling = Join-Path (Split-Path -Parent $RepoRoot) 'jd-supplychain-apps'
+        if (Test-Path -LiteralPath $sibling) {
+            $sibling
+        } else {
+            Join-Path $env:USERPROFILE 'repos\jd-supplychain-apps'
+        }
     }
     $MappingDirectory = Join-Path $appsRoot 'apps\jd_11rdc_dc_mapping\output'
 }
