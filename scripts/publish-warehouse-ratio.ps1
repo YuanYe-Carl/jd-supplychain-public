@@ -45,23 +45,14 @@ $GitBase = @('-c', "safe.directory=$RepoRoot", '-C', $RepoRoot)
 function Invoke-Git {
     param([Parameter(Mandatory)][string[]]$Arguments)
 
-    $stdoutPath = [IO.Path]::GetTempFileName()
-    $stderrPath = [IO.Path]::GetTempFileName()
+    # git 把进度写到 stderr，Stop 策略会把它误判成失败。
+    $previousErrorActionPreference = $ErrorActionPreference
     try {
-        $process = Start-Process `
-            -FilePath 'git.exe' `
-            -ArgumentList @($GitBase + $Arguments) `
-            -Wait `
-            -PassThru `
-            -NoNewWindow `
-            -RedirectStandardOutput $stdoutPath `
-            -RedirectStandardError $stderrPath
-        $exitCode = $process.ExitCode
-        Get-Content -LiteralPath $stdoutPath -ErrorAction SilentlyContinue
-        Get-Content -LiteralPath $stderrPath -ErrorAction SilentlyContinue
+        $ErrorActionPreference = 'Continue'
+        & git @GitBase @Arguments
+        $exitCode = $LASTEXITCODE
     } finally {
-        Remove-Item -LiteralPath $stdoutPath -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $stderrPath -Force -ErrorAction SilentlyContinue
+        $ErrorActionPreference = $previousErrorActionPreference
     }
     if ($exitCode -ne 0) {
         throw "git $($Arguments -join ' ') 失败，退出码 $exitCode"

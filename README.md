@@ -11,12 +11,14 @@ JD 供应链团队知识库的**对外发布站**（GitHub Pages 托管）。所
 | 门户首页 | 导航 | 所有页面的总入口（页面目录） | <https://yuanye-carl.github.io/jd-supplychain-public/> |
 | 团队知识库使用指南 | 指南 | 怎么往 Inbox 贡献材料、云⇄本地运转方式、AI 协作触 发词（含二维码） | <https://yuanye-carl.github.io/jd-supplychain-public/pages/guide.html> |
 | 仓配费节降通用框架 | 洞察·仓配成本 | 仓配费 = 非异常+异常，按 费项→方式→抓手  三层拆解的跨品类节降骨架（含流程图） | <https://yuanye-carl.github.io/jd-supplychain-public/pages/warehouse-cost-reduction.html> |
+| 逆向损失漏斗模型 | 方法论·逆向损失 | 从前台销量、售后申请、退换货、有损处置到损失金额，拆解四层过滤效率、数据口径与 RMA 影响 | <https://yuanye-carl.github.io/jd-supplychain-public/pages/reverse-loss-funnel.html> |
 | JD 仓网入门 | 新人·仓网 | 11 大 RDC、三层级 8→62 仓、RDC vs 配送中心、库存流转、布货决策、枢纽仓与常见坑（含流程图） | <https://yuanye-carl.github.io/jd-supplychain-public/pages/warehouse-network-primer.html> |
 | 轻货仓入门 | 新人·轻货仓 | 六仓网络、低成本逻辑、SKU 准入、消费者路由、库存边界、MOQ，以及与城市仓的核心区别 | <https://yuanye-carl.github.io/jd-supplychain-public/pages/light-warehouse-primer.html> |
 | JD 库存报告字段词典 | 参考·库存字段 | 商智库存报告全字段逐条识别（现货/可用/可订购公式、滞销库龄、出库销量口径、PV现货率），带即时筛选 | <https://yuanye-carl.github.io/jd-supplychain-public/pages/jd-inventory-report-fields.html> |
 | RDC 库存查询 | 工具·加密访问 | 密码直入，中文商品名实时联想 5 个候选，支持空格分词、京东码搜索与全部 RDC 筛选 | <https://yuanye-carl.github.io/jd-supplychain-public/pages/rdc-inventory-query.html> |
 | Free Goods BBCC 灵活费用仿真 | 工具·加密仿真 | 配置B仓、B-C频次、C仓路径、PG→B单趟成本及各环节折扣比例，计算BBCC增量成本和全国加权时效 | <https://yuanye-carl.github.io/jd-supplychain-public/pages/free-goods-bbcc-cost-simulation.html> |
 | 订单履约分析 | 工具·履约决策 | 使用加密库存与仓网关系分析真实订单或绑赠机制，输出发货模式比例、逐单及平均 upcharge | <https://yuanye-carl.github.io/jd-supplychain-public/pages/fulfillment-decision.html> |
+| 三个决策工具的底层逻辑 | 说明·底层逻辑 | BBCC 仿真、备货仓比、履约判定三个工具各自的数据来源、核心判断规则与输出，含横向对比 | <https://yuanye-carl.github.io/jd-supplychain-public/pages/tools-logic-overview.html> |
 
 ## 📁 目录结构
 
@@ -26,12 +28,14 @@ jd-supplychain-public/          # Pages 从 /(root) 发布
   pages/                        # 除入口外的所有页面集中在此
     guide.html                  # 团队知识库使用指南
     warehouse-cost-reduction.html   # 仓配费节降通用框架
+    reverse-loss-funnel.html        # 逆向损失漏斗模型
     warehouse-network-primer.html   # JD 仓网入门（新人向）
     light-warehouse-primer.html     # 轻货仓入门
     jd-inventory-report-fields.html # JD 库存报告字段词典
     rdc-inventory-query.html        # RDC 库存加密查询
     free-goods-bbcc-cost-simulation.html # 加密BBCC灵活费用仿真
     fulfillment-decision.html       # 加密订单履约分析
+    tools-logic-overview.html       # 三个决策工具的底层逻辑说明
   assets/
     rdc-inventory-query.css         # 查询页样式
     rdc-inventory-query.js          # 浏览器解密与查询逻辑
@@ -96,7 +100,7 @@ GitHub Pages 是纯静态托管，不能运行服务端密码认证。本站采�
 在当前 Windows 用户下运行一次：
 
 ```powershell
-cd <你的仓库路径>\jd-supplychain-public
+cd C:\Users\yao.q.1\repos\jd-supplychain-public
 .\scripts\setup-rdc-publication.ps1
 ```
 
@@ -115,7 +119,7 @@ cd <你的仓库路径>\jd-supplychain-public
 交互式生成密文：
 
 ```powershell
-cd <你的仓库路径>\jd-supplychain-public
+cd C:\Users\yao.q.1\repos\jd-supplychain-public
 .\scripts\build-rdc-inventory.ps1
 ```
 
@@ -131,7 +135,7 @@ cd <你的仓库路径>\jd-supplychain-public
 .\scripts\publish-rdc-inventory.ps1 -Force -NoPush
 ```
 
-密码至少需要 8 位，建议使用 12 位以上且不可猜测的密码。静态密文可被下载并离线尝试破解，因此密码强度是安全边界；不要把明文 Excel、密码或解密后的 JSON 提交到本仓库。
+必须使用至少 12 位且不可猜测的密码。静态密文可被下载并离线尝试破解，因此密码强度是安全边界；不要把明文 Excel、密码或解密后的 JSON 提交到本仓库。
 
 ## 🔐 更新订单履约分析
 
@@ -139,10 +143,10 @@ cd <你的仓库路径>\jd-supplychain-public
 
 默认发布最近3个库存切片，每个切片独立加密。页面解锁后只下载用户选择的切片，并在浏览器中执行确定性分仓与upcharge计算。用户在“数据与规则”页面修改的城市映射和费率只保存在当前浏览器`localStorage`，不影响团队默认密文。
 
-履约页使用独立DPAPI密码文件`%LOCALAPPDATA%\JD-SupplyChain\fulfillment-pages-password.xml`。静态密文可被离线尝试破解，建议使用至少12位的强密码。构建与推送：
+履约页使用独立DPAPI密码文件`%LOCALAPPDATA%\JD-SupplyChain\fulfillment-pages-password.xml`。当前访问密码为8位小写字母；静态密文可被离线尝试破解，建议后续提高到至少12位。构建与推送：
 
 ```powershell
-cd <你的仓库路径>\jd-supplychain-public
+cd C:\Users\yao.q.1\repos\jd-supplychain-public
 .\scripts\build-fulfillment-data.ps1
 .\scripts\publish-fulfillment.ps1
 ```
@@ -166,7 +170,7 @@ node .\scripts\test-fulfillment-engine.js
 BBCC页面是纯静态浏览器应用。真实SKU、FY2526历史货量、城市需求分布、13个B仓和商业报价均经AES-256-GCM加密；用户输入和仿真结果只存在于当前浏览器。页面使用独立的DPAPI密码文件`%LOCALAPPDATA%\JD-SupplyChain\bbcc-pages-password.xml`：
 
 ```powershell
-cd <你的仓库路径>\jd-supplychain-public
+cd C:\Users\yao.q.1\repos\jd-supplychain-public
 .\scripts\build-bbcc-data.ps1
 node .\scripts\test-bbcc-engine.js
 ```
