@@ -320,7 +320,9 @@ def main() -> int:
 
     fulfillment_data, _ = load_app_modules(args.app_assets)
     config = fulfillment_data.load_config()
-    snapshots = fulfillment_data.list_snapshots(Path(config["data_dir"]))
+    snapshots = fulfillment_data.list_snapshots(
+        fulfillment_data.inventory_dir(config)
+    )
     selected = list(reversed(snapshots[-args.snapshot_count :]))
     if not selected:
         raise BuildError("没有可发布的库存切片")
