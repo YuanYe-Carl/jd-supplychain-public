@@ -323,6 +323,11 @@ def main() -> int:
     snapshots = fulfillment_data.list_snapshots(
         fulfillment_data.inventory_dir(config)
     )
+    # 同一日期有多个文件时只取最新的一个，否则会写入同一个日期目录并重复列出。
+    latest_by_date = {
+        fulfillment_data.snapshot_date(path): path for path in snapshots
+    }
+    snapshots = list(latest_by_date.values())
     selected = list(reversed(snapshots[-args.snapshot_count :]))
     if not selected:
         raise BuildError("没有可发布的库存切片")

@@ -9,6 +9,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -21,17 +22,16 @@ from cryptography.hazmat.primitives import hashes
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+# 默认读取每日库存目录下文件名日期最新的切片；JD_RDC_SOURCE 可指向文件或目录。
 DEFAULT_SOURCE = Path(
-    os.getenv(
-        "JD_RDC_SOURCE",
-        str(
-            Path.home()
-            / "Procter and Gamble"
-            / "JD CSC Slay - 文档"
-            / "7. AI Order"
-            / "Low Inventory Alert"
-            / "RDC库存报告.xlsx"
-        ),
+    os.getenv("JD_RDC_SOURCE")
+    or os.getenv("JD_INVENTORY_DIR")
+    or str(
+        Path.home()
+        / "Procter and Gamble"
+        / "JD PS 铁军 - 文档"
+        / "03 库存管理"
+        / "每日库存"
     )
 )
 DEFAULT_OUTPUT = REPO_ROOT / "data" / "rdc-inventory.enc.json"
@@ -120,12 +120,33 @@ def prompt_password(environment_name: str = "") -> str:
     return password
 
 
+def resolve_source(source: Path) -> Path:
+    if source.is_file():
+        return source
+    if not source.is_dir():
+        raise BuildError(f"库存报告不存在：{source}")
+    files = [
+        path
+        for path in source.glob("*.xlsx")
+        if path.is_file() and not path.name.startswith("~$")
+    ]
+    if not files:
+        raise BuildError(f"未找到库存切片：{source}")
+
+    def sort_key(path: Path) -> tuple[str, int, str]:
+        matched = re.search(r"(20\d{6})", path.name)
+        return (matched.group(1) if matched else "", path.stat().st_mtime_ns, path.name)
+
+    return max(files, key=sort_key)
+
+
 def load_inventory(source: Path) -> tuple[dict[str, Any], dict[str, str]]:
     if not source.exists():
         raise BuildError(f"库存报告不存在：{source}")
     try:
         frame = pd.read_excel(
             source,
+            engine="calamine",
             dtype={"SKU": "string", "条形码": "string"},
             usecols=lambda column: str(column).strip() in SOURCE_COLUMNS,
         )
@@ -145,6 +166,25 @@ def load_inventory(source: Path) -> tuple[dict[str, Any], dict[str, str]]:
     frame["条形码"] = frame["条形码"].str.replace(r"\.0$", "", regex=True)
     for column in NUMERIC_COLUMNS:
         frame[column] = pd.to_numeric(frame[column], errors="coerce")
+
+    # 每日库存是配送中心粒度，这里按 SKU + RDC 汇总成 RDC 维度。
+    frame = frame[frame["SKU"].ne("") & frame["RDC"].ne("")].copy()
+    for column in ("商品名称", "条形码"):
+        frame[column] = frame[column].replace("", pd.NA)
+    frame = (
+        frame.groupby(["SKU", "RDC"], as_index=False, sort=False)
+        .agg(
+            {
+                "商品名称": "first",
+                "可用库存": lambda values: values.sum(min_count=1),
+                "采购未到货": lambda values: values.sum(min_count=1),
+                "全国采购价": "first",
+                "条形码": "first",
+            }
+        )
+    )
+    for column in ("商品名称", "条形码"):
+        frame[column] = frame[column].fillna("").astype(str)
 
     frame = frame[list(REQUIRED_COLUMNS)].where(pd.notna(frame), None)
     dictionary_columns = TEXT_COLUMNS
@@ -464,6 +504,7 @@ def main() -> int:
     args = parse_args()
     password = prompt_password(args.password_env)
     started_at = time.perf_counter()
+    args.source = resolve_source(args.source)
     print(f"正在读取并压缩库存报告：{args.source}", flush=True)
     data, metadata = load_inventory(args.source)
     print(

@@ -13,9 +13,23 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 if (-not $Source) {
     $Source = if ($env:JD_RDC_SOURCE) {
         $env:JD_RDC_SOURCE
+    } elseif ($env:JD_INVENTORY_DIR) {
+        $env:JD_INVENTORY_DIR
     } else {
-        Join-Path $env:USERPROFILE 'Procter and Gamble\JD CSC Slay - 文档\7. AI Order\Low Inventory Alert\RDC库存报告.xlsx'
+        Join-Path $env:USERPROFILE 'Procter and Gamble\JD PS 铁军 - 文档\03 库存管理\每日库存'
     }
+}
+# 目录则取文件名日期最新的库存切片。
+if (Test-Path -LiteralPath $Source -PathType Container) {
+    $latest = Get-ChildItem -LiteralPath $Source -Filter '*.xlsx' -File |
+        Where-Object Name -NotLike '~$*' |
+        Select-Object *, @{Name='SnapshotDate';Expression={
+            if ($_.Name -match '20\d{6}') { $Matches[0] } else { '' }
+        }} |
+        Sort-Object SnapshotDate, LastWriteTimeUtc, Name -Descending |
+        Select-Object -First 1
+    if (-not $latest) { throw "没有找到库存切片：$Source" }
+    $Source = $latest.FullName
 }
 $RelativeOutputs = @(
     'data/rdc-inventory.enc.json'
